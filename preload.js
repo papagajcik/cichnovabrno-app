@@ -1,4 +1,3 @@
-// Hlavní okno: pošle do hlavního procesu vybranou třídu/učitele a jeho rozvrh (z localStorage aplikace).
 const { ipcRenderer } = require('electron');
 function push() {
   try {

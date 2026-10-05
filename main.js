@@ -2,12 +2,10 @@ const { app, BrowserWindow, Tray, Menu, Notification, globalShortcut, ipcMain, s
 const path = require('path'), fs = require('fs'), os = require('os');
 const { autoUpdater } = require('electron-updater');
 
-/* ====== NASTAVENÍ ====== */
-const LIVE = 'https://cichnovabrno.cz/';          // adresa živého webu (změň, pokud běží jinde)
+const LIVE = 'https://cichnovabrno.papousek.eu/';
 const APP_URL = LIVE + 'app-pc.html';
 const API = 'https://cichnovainfo.papousek.eu/api.php';
-const SHORTCUT = 'CommandOrControl+Alt+C';        // zobrazit / skrýt okno
-/* ======================= */
+const SHORTCUT = 'CommandOrControl+Alt+C';
 
 const ICON = path.join(__dirname, 'build', 'icon.png');
 protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } }]);
@@ -27,7 +25,6 @@ function notify(title, body) {
   const n = new Notification({ title, body, icon: ICON }); n.on('click', showWin); n.show();
 }
 
-/* ---------- okno + záložní zabalená kopie ---------- */
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json', '.txt': 'text/plain' };
 function createWin(hidden) {
   win = new BrowserWindow(Object.assign({ width: 1280, height: 820 }, S.bounds || {}, {
@@ -40,15 +37,14 @@ function createWin(hidden) {
   let t; const sb = () => { clearTimeout(t); t = setTimeout(() => { if (!win.isMaximized() && !win.isMinimized()) { S.bounds = win.getBounds(); save(); } }, 600); };
   win.on('resize', sb); win.on('move', sb);
   win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
-  win.webContents.on('will-navigate', (e, url) => { if (!/^(app:|https:\/\/cichnovabrno\.cz)/.test(url)) { e.preventDefault(); shell.openExternal(url); } });
+  win.webContents.on('will-navigate', (e, url) => { if (!/^(app:|https:\/\/cichnovabrno\.papousek\.eu)/.test(url)) { e.preventDefault(); shell.openExternal(url); } });
   win.webContents.on('did-fail-load', (e, code, d, url, isMain) => { if (isMain && code !== -3 && !url.startsWith('app:')) win.loadURL('app://app/app-pc.html'); });
   win.loadURL(APP_URL);
-  setInterval(() => {   // při běhu z offline kopie zkusí znovu živý web
+  setInterval(() => {
     if (win && win.webContents.getURL().startsWith('app:')) net.fetch(APP_URL, { method: 'HEAD' }).then(r => { if (r.ok) win.loadURL(APP_URL); }).catch(() => {});
   }, 60000);
 }
 
-/* ---------- rozvrh: výpočet "teď / další", tray, mini okno ---------- */
 const mins = t => { const m = /(\d+):(\d+)/.exec(t || ''); return m ? +m[1] * 60 + +m[2] : null; };
 const fmt = m => m >= 60 ? Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + (m % 60) + ' min' : '') : m + ' min';
 function describe() {
@@ -90,7 +86,6 @@ async function pollHit() {
   } catch (e) {}
 }
 
-/* ---------- export do kalendáře (.ics) ---------- */
 function exportIcs() {
   if (!TT || !TT.d || !TT.d.lessons) return dialog.showMessageBox({ message: 'Nejdřív v aplikaci vyber třídu a otevři rozvrh.' });
   const now = new Date(), p = n => String(n).padStart(2, '0'), esc = s => String(s || '').replace(/[\\;,]/g, '\\$&').replace(/\n/g, '\\n');
@@ -109,7 +104,6 @@ function exportIcs() {
     .then(r => { if (!r.canceled) fs.writeFileSync(r.filePath, L.join('\r\n')); });
 }
 
-/* ---------- autostart, mini okno, aktualizace ---------- */
 function setAuto(on) {
   S.autostart = on; save();
   if (process.platform === 'linux') {
@@ -130,7 +124,7 @@ function releasesUrl() {
   try { const y = fs.readFileSync(path.join(process.resourcesPath, 'app-update.yml'), 'utf8'); return `https://github.com/${/owner: (.+)/.exec(y)[1].trim()}/${/repo: (.+)/.exec(y)[1].trim()}/releases/latest`; } catch (e) { return null; }
 }
 function initUpdater() {
-  autoUpdater.autoDownload = process.platform !== 'darwin';   // macOS bez podpisu neumí tichou instalaci -> jen odkaz na stažení
+  autoUpdater.autoDownload = process.platform !== 'darwin';
   autoUpdater.on('update-available', i => {
     if (process.platform === 'darwin') dialog.showMessageBox({ message: `Je dostupná nová verze ${i.version}.`, buttons: ['Stáhnout', 'Později'] }).then(r => { const u = releasesUrl(); if (r.response === 0 && u) shell.openExternal(u); });
     else notify('Aktualizace', `Stahuji verzi ${i.version}…`);
@@ -158,14 +152,14 @@ function buildMenu() {
 }
 
 app.whenReady().then(() => {
-  protocol.handle('app', req => {   // zabalená kopie; rozvrh.php se proxuje na živý server
+  protocol.handle('app', req => {
     const u = new URL(req.url), root = path.join(__dirname, 'app');
     if (u.pathname === '/rozvrh.php') return net.fetch(LIVE + 'rozvrh.php' + u.search);
     const f = path.join(root, path.normalize(decodeURIComponent(u.pathname === '/' ? '/app-pc.html' : u.pathname)));
     if (!f.startsWith(root)) return new Response('', { status: 403 });
     try { return new Response(fs.readFileSync(f), { headers: { 'content-type': MIME[path.extname(f)] || 'application/octet-stream' } }); } catch (e) { return new Response('', { status: 404 }); }
   });
-  session.defaultSession.webRequest.onHeadersReceived({ urls: ['https://cichnovainfo.papousek.eu/*'] }, (d, cb) => {   // CORS pro offline kopii (origin app://)
+  session.defaultSession.webRequest.onHeadersReceived({ urls: ['https://cichnovainfo.papousek.eu/*'] }, (d, cb) => {
     const h = d.responseHeaders;
     if (win && win.webContents.getURL().startsWith('app:')) {
       Object.keys(h).forEach(k => { if (/^access-control-/i.test(k)) delete h[k]; });
