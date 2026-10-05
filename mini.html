@@ -1,0 +1,14 @@
+<!doctype html><html lang="cs"><meta charset="utf-8"><title>Čichnova</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:12px 14px;background:#0a0a2a;color:#e2e8f0;font:600 13px system-ui,sans-serif;-webkit-app-region:drag;user-select:none;overflow:hidden;border:1px solid #2a2a5a;height:100vh}
+#x{position:absolute;top:6px;right:10px;cursor:pointer;font-size:18px;color:#94a3b8;-webkit-app-region:no-drag}
+#top{color:#f59e0b;font-size:12px;text-transform:uppercase;letter-spacing:.04em}#t{display:block;font-size:20px;color:#fff;margin:4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#m{color:#94a3b8;font-size:12px}#bar{height:5px;border-radius:3px;background:#1e1e4a;margin-top:10px;overflow:hidden}#bar i{display:block;height:100%;background:#f59e0b;width:0}
+</style>
+<div id="x">×</div><div id="top">Rozvrh</div><b id="t">Načítám…</b><div id="m"></div><div id="bar"><i></i></div>
+<script>
+const $=id=>document.getElementById(id);
+$('x').onclick=()=>mini.close();
+mini.onState(s=>{$('top').textContent=s.top;$('t').textContent=s.t;$('m').textContent=s.m||'';
+  $('bar').style.visibility=s.pct==null?'hidden':'visible';$('bar').firstChild.style.width=(s.pct||0)+'%'});
+</script></html>

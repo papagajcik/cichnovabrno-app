@@ -1,0 +1,5 @@
+const C='cichnova-v17',SHELL=['app.html','app-pc.html','manifest-pc.webmanifest','logo.jpg','icon-192.png','icon-180.png','icon-512.png','manifest.webmanifest','shared/vendor/inter.css','shared/vendor/inter-latin.woff2','shared/vendor/inter-latin-ext.woff2','shared/vendor/fa/css/fontawesome.min.css','shared/vendor/fa/css/solid.min.css','shared/vendor/fa/webfonts/fa-solid-900.woff2','shared/flappy.js?v=3'];
+self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>Promise.allSettled(SHELL.map(u=>c.add(u)))).then(()=>self.skipWaiting()))});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
+self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET'||new URL(r.url).origin!==location.origin)return;
+e.respondWith(fetch(r).then(x=>{if(x.ok){const y=x.clone();caches.open(C).then(c=>c.put(r,y))}return x}).catch(()=>caches.match(r).then(m=>m||caches.match(/app-pc/.test(r.url)?'app-pc.html':'app.html'))))});
