@@ -6,13 +6,16 @@ const LIVE = 'https://cichnovabrno.papousek.eu/';
 const APP_URL = LIVE + 'app-pc.html';
 const API = 'https://cichnovainfo.papousek.eu/api.php';
 const SHORTCUT = 'CommandOrControl+Alt+C';
+const MINI_SHORTCUT = 'CommandOrControl+Alt+M';
 
+app.setName('Čichnova Brno');
 const ICON = path.join(__dirname, 'build', 'icon.png');
+app.setAppUserModelId('cz.cichnovabrno.portal');
 protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } }]);
 
-let win, mini, tray, quitting = false, TT = null, manualCheck = false;
+let win, mini, tray, welcome, quitting = false, TT = null, manualCheck = false;
 const SF = () => path.join(app.getPath('userData'), 'settings.json');
-let S = { notif: true, autostart: false, ttHash: {}, hitSeen: null };
+let S = { notif: true, autostart: false, miniStart: false, welcomed: false, ttHash: {}, hitSeen: null };
 try { S = Object.assign(S, JSON.parse(fs.readFileSync(SF(), 'utf8'))); } catch (e) {}
 const save = () => { try { fs.writeFileSync(SF(), JSON.stringify(S)); } catch (e) {} };
 
@@ -28,7 +31,7 @@ function notify(title, body) {
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json', '.txt': 'text/plain' };
 function createWin(hidden) {
   win = new BrowserWindow(Object.assign({ width: 1280, height: 820 }, S.bounds || {}, {
-    minWidth: 900, minHeight: 600, title: 'Čichnova Brno', backgroundColor: '#0a0a2a', icon: ICON, show: false,
+    minWidth: 900, minHeight: 600, title: 'Čichnova Brno', backgroundColor: '#0a0a2a', icon: process.platform === 'linux' ? ICON : undefined, show: false,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true }
   }));
   win.setMenuBarVisibility(false);
@@ -39,6 +42,7 @@ function createWin(hidden) {
   win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
   win.webContents.on('will-navigate', (e, url) => { if (!/^(app:|https:\/\/cichnovabrno\.papousek\.eu)/.test(url)) { e.preventDefault(); shell.openExternal(url); } });
   win.webContents.on('did-fail-load', (e, code, d, url, isMain) => { if (isMain && code !== -3 && !url.startsWith('app:')) win.loadURL('app://app/app-pc.html'); });
+  win.webContents.on('before-input-event', (e, i) => { if (i.type === 'keyDown' && i.key === 'F1') { e.preventDefault(); openWelcome(); } });
   win.loadURL(APP_URL);
   setInterval(() => {
     if (win && win.webContents.getURL().startsWith('app:')) net.fetch(APP_URL, { method: 'HEAD' }).then(r => { if (r.ok) win.loadURL(APP_URL); }).catch(() => {});
@@ -120,6 +124,21 @@ function toggleMini() {
   mini.setAlwaysOnTop(true, 'floating'); mini.loadFile('mini.html');
   mini.webContents.on('did-finish-load', tick); mini.on('closed', () => { mini = null; buildMenu(); }); buildMenu();
 }
+function openWelcome() {
+  if (welcome && !welcome.isDestroyed()) { welcome.focus(); return; }
+  welcome = new BrowserWindow({ width: 640, height: 780, minWidth: 540, minHeight: 620, title: 'Čichnova Brno – funkce aplikace', backgroundColor: '#0a0a2a',
+    icon: process.platform === 'linux' ? ICON : undefined, webPreferences: { preload: path.join(__dirname, 'welcome-preload.js'), contextIsolation: true, sandbox: true } });
+  welcome.setMenuBarVisibility(false); welcome.loadFile('welcome.html');
+  welcome.on('closed', () => { welcome = null; if (!S.welcomed) { S.welcomed = true; save(); } showWin(); });
+}
+function checkUpdates(manual) {
+  if (!app.isPackaged) { if (manual) dialog.showMessageBox({ message: 'Aktualizace fungují jen v nainstalované aplikaci.' }); return; }
+  manualCheck = manual; autoUpdater.checkForUpdates().catch(() => {});
+}
+ipcMain.on('welcome', openWelcome);
+ipcMain.handle('dk:get', () => ({ notif: S.notif !== false, autostart: !!S.autostart, miniStart: !!S.miniStart, platform: process.platform }));
+ipcMain.handle('dk:set', (e, k, v) => { if (k === 'autostart') setAuto(!!v); else if (k === 'notif' || k === 'miniStart') { S[k] = !!v; save(); } buildMenu(); });
+ipcMain.handle('dk:act', (e, n) => { if (n === 'mini') toggleMini(); else if (n === 'ics') exportIcs(); else if (n === 'update') checkUpdates(true); else if (n === 'close' && welcome) welcome.close(); });
 function releasesUrl() {
   try { const y = fs.readFileSync(path.join(process.resourcesPath, 'app-update.yml'), 'utf8'); return `https://github.com/${/owner: (.+)/.exec(y)[1].trim()}/${/repo: (.+)/.exec(y)[1].trim()}/releases/latest`; } catch (e) { return null; }
 }
@@ -132,7 +151,7 @@ function initUpdater() {
   autoUpdater.on('update-downloaded', i => dialog.showMessageBox({ message: `Verze ${i.version} je připravená k instalaci.`, buttons: ['Restartovat a nainstalovat', 'Později'] })
     .then(r => { if (r.response === 0) { quitting = true; autoUpdater.quitAndInstall(); } }));
   autoUpdater.on('update-not-available', () => { if (manualCheck) dialog.showMessageBox({ message: 'Máš nejnovější verzi.' }); manualCheck = false; });
-  autoUpdater.on('error', e => { if (manualCheck) dialog.showMessageBox({ type: 'error', message: 'Aktualizaci se nepodařilo zkontrolovat.', detail: String(e && e.message || e) }); manualCheck = false; });
+  autoUpdater.on('error', e => { if (manualCheck) dialog.showMessageBox({ type: 'error', message: 'Aktualizaci se nepodařilo zkontrolovat.', detail: 'Zkontroluj připojení k internetu a zkus to znovu později.' }); manualCheck = false; });
   autoUpdater.checkForUpdates().catch(() => {});
   setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 6 * 3600 * 1000);
 }
@@ -142,10 +161,12 @@ function buildMenu() {
     { label: 'Otevřít Čichnova Brno', click: showWin },
     { label: mini && !mini.isDestroyed() ? 'Skrýt mini okno' : 'Mini okno „Teď / Další hodina“', click: toggleMini },
     { label: 'Exportovat rozvrh do kalendáře (.ics)', click: exportIcs },
+    { label: 'Funkce aplikace (úvod)', click: openWelcome },
+    { label: 'Zobrazit mini okno při startu', type: 'checkbox', checked: !!S.miniStart, click: x => { S.miniStart = x.checked; save(); } },
     { type: 'separator' },
     { label: 'Notifikace', type: 'checkbox', checked: S.notif !== false, click: m => { S.notif = m.checked; save(); } },
     { label: 'Spouštět po startu systému', type: 'checkbox', checked: !!S.autostart, click: m => setAuto(m.checked) },
-    { label: 'Zkontrolovat aktualizace', enabled: app.isPackaged, click: () => { manualCheck = true; autoUpdater.checkForUpdates().catch(() => {}); } },
+    { label: 'Zkontrolovat aktualizace', click: () => checkUpdates(true) },
     { type: 'separator' },
     { label: 'Ukončit', click: () => { quitting = true; app.quit(); } }
   ]));
@@ -169,8 +190,12 @@ app.whenReady().then(() => {
   });
   tray = new Tray(nativeImage.createFromPath(ICON).resize({ width: 18, height: 18 }));
   tray.setToolTip('Čichnova Brno'); tray.on('click', showWin); buildMenu();
-  createWin(process.argv.includes('--hidden') || app.getLoginItemSettings().wasOpenedAtLogin);
+  const first = !S.welcomed;
+  createWin(first || process.argv.includes('--hidden') || app.getLoginItemSettings().wasOpenedAtLogin);
+  if (first) openWelcome();
+  globalShortcut.register(MINI_SHORTCUT, toggleMini);
   globalShortcut.register(SHORTCUT, () => (win.isVisible() && win.isFocused()) ? win.hide() : showWin());
+  if (S.miniStart) toggleMini();
   setInterval(tick, 15000); setInterval(refreshTT, 15 * 60000); setInterval(pollHit, 5 * 60000); pollHit();
   if (app.isPackaged) initUpdater();
 });

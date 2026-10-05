@@ -19,7 +19,7 @@ Nejnovější verzi najdeš v sekci **[Releases](../../releases/latest)**. Stáh
 **macOS** – otevři `.dmg` a přetáhni aplikaci do složky Aplikace. Při prvním spuštění na ni klikni pravým tlačítkem a zvol **Otevřít**. Kdyby se zobrazilo, že je aplikace poškozená, spusť v Terminálu:
 
 ```
-xattr -cr "/Applications/Cichnova Brno.app"
+xattr -cr "/Applications/Čichnova Brno.app"
 ```
 
 **Linux** – nastav souboru právo ke spuštění a spusť ho:
@@ -33,10 +33,12 @@ Na novějším Ubuntu může být potřeba doinstalovat `libfuse2`.
 
 ## Co aplikace umí
 
+Při prvním spuštění tě aplikace provede všemi funkcemi a hned si je můžeš zapnout. Úvod najdeš kdykoli znovu v **Nastavení → Více**, v nabídce ikony v liště nebo klávesou **F1**.
+
 - **Rozvrh, jídelníček, HitParáda a hry** stejně jako na webu portálu.
 - **Funguje i při výpadku** – když se portál nenačte, otevře se zabalená kopie a po obnovení připojení se aplikace vrátí na živou verzi.
 - **Ikona v systémové liště** – zavřením okna aplikace neskončí, jen se schová. Ukončit ji můžeš z nabídky ikony.
-- **Mini okno „Teď / Další hodina“** – malé okno, které zůstává nad ostatními a ukazuje aktuální hodinu, učebnu a zbývající čas. Otevřeš ho z nabídky ikony.
+- **Mini okno „Teď / Další hodina“** – malé okno, které zůstává nad ostatními a ukazuje aktuální hodinu, učebnu a zbývající čas. Otevřeš ho z nabídky ikony v liště, zkratkou Ctrl + Alt + M, nebo ho můžeš nechat otevírat při každém startu.
 - **Odpočet do konce hodiny nebo přestávky** – na macOS přímo u ikony v liště, na Windows a Linuxu po najetí myší na ikonu.
 - **Notifikace** – upozornění na změnu v rozvrhu aktuálního týdne a na novou písničku v HitParádě v záložce Tento týden.
 - **Export rozvrhu do kalendáře** – uloží aktuální týden jako soubor `.ics`, který otevřeš v Google Kalendáři, Outlooku nebo Kalendáři v Apple.
@@ -47,8 +49,8 @@ Aby fungovaly notifikace, mini okno a odpočet, vyber v aplikaci svou třídu ne
 
 ## Klávesová zkratka
 
-**Ctrl + Alt + C** (na macOS **Cmd + Alt + C**) zobrazí nebo skryje okno aplikace.
+**Ctrl + Alt + C** (na macOS **Cmd + Alt + C**) zobrazí nebo skryje okno aplikace. **Ctrl + Alt + M** (**Cmd + Alt + M**) otevře nebo zavře mini okno.
 
 ## Nabídka ikony v liště
 
-Otevřít aplikaci, mini okno, export rozvrhu, zapnutí a vypnutí notifikací, spouštění po startu systému, kontrola aktualizací a ukončení.
+Ikonu najdeš vedle hodin (ve Windows možná pod šipkou „Zobrazit skryté ikony“). Klikni na ni pravým tlačítkem. Najdeš tam: otevřít aplikaci, mini okno, mini okno při startu, export rozvrhu, zapnutí a vypnutí notifikací, spouštění po startu systému, kontrola aktualizací a ukončení.
