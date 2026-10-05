@@ -1,12 +1,13 @@
 {
   "name": "cichnova-brno-desktop",
-  "version": "1.0.1",
+  "version": "2.0.1",
   "description": "Čichnova Brno – desktopový portál",
   "author": "Čichnova Brno",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "ci-config": "node scripts/ci-config.js"
   },
   "dependencies": {
     "electron-updater": "^6.3.9"
@@ -58,8 +59,12 @@
     "linux": {
       "target": "AppImage",
       "category": "Education",
-      "executableName": "cichnova-brno"
+      "executableName": "cichnova-brno",
+      "desktop": {
+        "Name": "Čichnova Brno"
+      }
     }
   },
-  "productName": "Čichnova Brno"
+  "productName": "Čichnova Brno",
+  "desktopName": "cichnova-brno.desktop"
 }

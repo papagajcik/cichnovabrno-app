@@ -14,7 +14,7 @@ Nejnovější verzi najdeš v sekci **[Releases](../../releases/latest)**. Stáh
 
 ## Instalace
 
-**Windows** – spusť stažený `.exe` a projdi instalátor. Pokud se objeví modré okno „Počítač byl chráněn“, klikni na **Další informace** a pak na **Přesto spustit**. Aplikace zatím nemá placený podpis, proto Windows takto upozorňuje.
+**Windows** – spusť stažený `.exe` a projdi instalátor. Pokud se objeví modré okno „Počítač byl chráněn“, klikni na **Další informace** a pak na **Přesto spustit**. Aplikace zatím nemá placený podpis, proto Windows takto upozorňuje. (Jak podepisování zapnout: viz `PODEPISOVANI.md`.)
 
 **macOS** – otevři `.dmg` a přetáhni aplikaci do složky Aplikace. Při prvním spuštění na ni klikni pravým tlačítkem a zvol **Otevřít**. Kdyby se zobrazilo, že je aplikace poškozená, spusť v Terminálu:
 

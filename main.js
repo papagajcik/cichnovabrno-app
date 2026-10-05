@@ -8,9 +8,25 @@ const API = 'https://cichnovainfo.papousek.eu/api.php';
 const SHORTCUT = 'CommandOrControl+Alt+C';
 const MINI_SHORTCUT = 'CommandOrControl+Alt+M';
 
+const APP_ID = 'cz.cichnovabrno.portal';
 app.setName('Čichnova Brno');
 const ICON = path.join(__dirname, 'build', 'icon.png');
-app.setAppUserModelId('cz.cichnovabrno.portal');
+app.setAppUserModelId(APP_ID);
+/* Windows ukazuje v hlavičce oznámení název podle AppUserModelID. Když k němu v systému není registrovaný
+   název (spuštění bez instalace, starší zástupce v nabídce Start…), zobrazí se „electron.app.…“.
+   Proto název a ikonu zapíšeme do registru uživatele (HKCU, bez nutnosti práv správce). */
+function registerToastName() {
+  if (process.platform !== 'win32') return;
+  try {
+    const key = 'HKCU\\Software\\Classes\\AppUserModelId\\' + APP_ID, cp = require('child_process');
+    const add = (name, val) => cp.execFile('reg', ['add', key, '/v', name, '/t', 'REG_SZ', '/d', val, '/f'], { windowsHide: true }, () => {});
+    add('DisplayName', 'Čichnova Brno');
+    const icon = path.join(app.getPath('userData'), 'toast-icon.png');
+    fs.mkdirSync(path.dirname(icon), { recursive: true }); fs.copyFileSync(ICON, icon);
+    add('IconUri', icon);
+  } catch (e) {}
+}
+registerToastName();
 protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } }]);
 
 let win, mini, tray, welcome, quitting = false, TT = null, manualCheck = false;
